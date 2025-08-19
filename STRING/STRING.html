@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>S(x,y,z) Program</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; line-height: 1.6; }
+    .formula { font-family: sans-serif; font-weight: bold; }
+    #result {
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 16px;
+      line-height: 1.25;
+      margin-top: 16px;
+      padding: 10px;
+      border: 2px solid #d5d5d5;
+      border-radius: 8px;
+      background: #f6f6f6;
+      overflow-x: hidden;
+      overflow-y: auto;
+      width: auto;
+    }
+    input[type="number"] { width: 50px; }
+    input[type="text"] { width: 500px; }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #4e4e4e;
+      background: #ffffff;
+      border: 2px solid #d5d5d5;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.25s, transform 0.2s, border-color 0.25s;
+    }
+    button:hover { background: #f0f0f0; border-color: #999999; transform: scale(1.025); }
+    button:active { background: #e0e0e0; border-color: #888888; transform: scale(0.98); }
+    .muted { color: #6f6f6f; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2><span class="formula">S(x,y,z) Program</span></h2>
+  <label>Character set: <input type="text" id="chars" value=""></label><br>
+  <label>x (Number of characters to use): <input type="number" id="x" min="1" max="200" value=""></label><br>
+  <label>y (Character in first string): <input type="number" id="y" min="1" value=""></label><br>
+  <label>z (String number): <input type="number" id="z" min="1" value=""></label><br>
+  <label>Output window width (including spaces): <input type="number" id="winWidth" min="2" value=""></label><br>
+  <button id="btn" onclick="generate()">GENERATE</button>
+  <div class="muted" id="info"></div>
+  <div id="result"></div>
+
+  <script>
+    const resultEl = document.getElementById('result');
+    const infoEl = document.getElementById('info');
+    const btn = document.getElementById('btn');
+    const charsInput = document.getElementById('chars');
+
+    // 숫자, 영문, 특수문자만 입력 가능
+    charsInput.addEventListener('input', () => {
+      charsInput.value = charsInput.value.replace(/[^a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/g, '');
+      infoEl.textContent = "Values changed. Click GENERATE to start calculation.";
+    });
+
+    ['x','y','z','winWidth'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        infoEl.textContent = "Values changed. Click GENERATE to start calculation.";
+      });
+    });
+
+    function generate() {
+      const startTime = performance.now();
+      const chars = charsInput.value;
+      const x = parseInt(document.getElementById('x').value);
+      const y = parseInt(document.getElementById('y').value);
+      const z = parseInt(document.getElementById('z').value);
+      const winWidth = parseInt(document.getElementById('winWidth').value);
+
+      if(!chars || !Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(z) || x<1 || y<1 || z<1) {
+        resultEl.textContent = "x, y, z must be natural numbers and character set cannot be empty.";
+        return;
+      }
+      if(x>chars.length){ resultEl.textContent="x cannot exceed character set length."; return; }
+      if(y>x){ resultEl.textContent="y cannot exceed x."; return; }
+
+      const maxWidth = Number.isInteger(winWidth) && winWidth >= 2 ? winWidth : Infinity;
+      if(Number.isInteger(winWidth) && winWidth >= 2){
+        resultEl.style.width = winWidth + "ch";
+      } else {
+        resultEl.style.width = "auto";
+      }
+
+      btn.disabled=true;
+      resultEl.textContent="";
+      const arr = chars.slice(0,x).split("");
+      let progressChars=0n;
+      const lines = [];
+      let currentLine = [];
+      let currentLength = 0;
+
+      function appendChar(ch){
+        const charLength = currentLine.length > 0 ? 2 : 1;
+        if(currentLength + charLength > maxWidth){
+          lines.push(currentLine.join(" "));
+          currentLine = [];
+          currentLength = 0;
+        }
+        currentLine.push(ch);
+        currentLength += charLength;
+        progressChars++;
+      }
+
+      function dfs(lastChar, depth){
+        if(depth===0){ appendChar(lastChar); return; }
+        for(let i=0;i<arr.length;i++){
+          if(arr[i]!==lastChar) dfs(arr[i], depth-1);
+        }
+      }
+
+      dfs(arr[(y-1)%x], z-1);
+
+      if(currentLine.length) lines.push(currentLine.join(" "));
+      resultEl.textContent = lines.join("\n");
+
+      btn.disabled=false;
+      const endTime = performance.now();
+      infoEl.textContent = `Progress: 100% | Characters generated: ${progressChars} | Actual output time: ${Math.round(endTime-startTime)} ms`;
+    }
+  </script>
+</body>
+</html>
